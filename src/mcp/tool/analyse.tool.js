@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { modeles } from '../../config.js';
-import { ai, messageErreurGemini } from '../../service/gemini.service.js';
+import { ai, messageErreurGemini, optionsAppelDirect } from '../../service/gemini.service.js';
 import { lireMedia } from '../../service/fichier.service.js';
 import { reponseErreur, reponseTexte } from '../reponse.js';
 
@@ -19,6 +19,13 @@ const schemaEntree = z
         'Ce que tu veux savoir. Pour itérer, donne le prompt d’origine et demande les écarts : ' +
           '« Ce rendu respecte-t-il ce prompt : … ? Liste les défauts visibles, avec leur moment. »',
       ),
+    modele: z
+      .enum(modeles.analyse)
+      .default(modeles.analyse[0])
+      .describe(
+        'gemini-flash-lite-latest (défaut, quelques secondes) · gemini-flash-latest (analyse plus fine, ' +
+          'mais plus lente et parfois surchargée).',
+      ),
   })
   .strict();
 
@@ -34,18 +41,18 @@ d'une correction : compare le rendu au prompt, repère les artefacts, vérifie l
       inputSchema: schemaEntree,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
-    async ({ chemin, question }) => {
+    async ({ chemin, question, modele }) => {
       try {
         const media = await lireMedia(chemin, 'media');
         const interaction = await ai.interactions.create(
           {
-            model: modeles.analyse,
+            model: modele,
             input: [
               { type: 'text', text: question },
               { type: media.categorie, data: media.data, mime_type: media.mime_type },
             ],
           },
-          { timeout_ms: 5 * 60_000 },
+          optionsAppelDirect(2 * 60_000),
         );
         if (!interaction.output_text) {
           return reponseErreur(`Gemini n’a rien répondu (statut « ${interaction.status} »).`);

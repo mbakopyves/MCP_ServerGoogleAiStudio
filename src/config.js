@@ -27,6 +27,7 @@ export const modeles = {
   image: ['gemini-3.1-flash-image', 'gemini-3-pro-image', 'gemini-3.1-flash-lite-image'],
   veo: ['veo-3.1-generate-preview', 'veo-3.1-fast-generate-preview', 'veo-3.1-lite-generate-preview'],
   omni: ['gemini-omni-1.1-flash', 'gemini-omni-flash-preview'],
-  // Alias qui suit toujours le dernier Gemini Flash : sert à analyser images et vidéos.
-  analyse: 'gemini-flash-latest',
+  // Alias qui suivent toujours les derniers Gemini Flash : servent à analyser images et vidéos.
+  // La version lite répond en quelques secondes ; la version complète est plus fine mais plus lente.
+  analyse: ['gemini-flash-lite-latest', 'gemini-flash-latest'],
 };

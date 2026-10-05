@@ -7,6 +7,21 @@ export const ai = new GoogleGenAI({ apiKey: config.cleApiGemini });
 export const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Options de l'API Interactions pour un appel fait PENDANT un appel d'outil : le client MCP
+ * attend la réponse, souvent 60 s au maximum. Par défaut, le SDK réessaie jusqu'à 4 fois sur
+ * 429 et 5xx, avec jusqu'à 30 s de pauses : on limite à une seule nouvelle tentative, et jamais
+ * sur un 429 (quota), qu'on préfère signaler tout de suite.
+ * Les vidéos, lancées en arrière-plan, gardent le comportement par défaut.
+ */
+export function optionsAppelDirect(timeoutMs) {
+  return {
+    timeout_ms: timeoutMs,
+    retries: { strategy: 'attempt-count-backoff', maxRetries: 1, backoff: { initialInterval: 1000, maxElapsedTime: 5000 } },
+    retry_codes: ['408', '5XX'],
+  };
+}
+
+/**
  * Traduit une erreur de l'API Gemini en message exploitable par l'IA cliente :
  * on dit ce qui s'est passé ET quoi faire ensuite.
  */
@@ -31,6 +46,13 @@ export function messageErreurGemini(erreur) {
     case 404:
       return `Modèle ou ressource introuvable. Utilise gemini_lister_modeles pour voir les modèles disponibles. Détail : ${detail}`;
     case 429:
+      // Quota à 0 = modèle exclu du niveau gratuit : attendre ne sert à rien.
+      if (/limit: 0\b/.test(detail)) {
+        return (
+          "Ce modèle n'est pas inclus dans le niveau gratuit de la clé (quota à 0). " +
+          `Active la facturation sur AI Studio pour l'utiliser : https://ai.dev/rate-limit. Détail : ${detail}`
+        );
+      }
       return `Quota Gemini dépassé. Attends une minute avant de réessayer. Détail : ${detail}`;
     default:
       if (statut >= 500) return `Gemini est indisponible (${statut}). Réessaie dans quelques instants. Détail : ${detail}`;

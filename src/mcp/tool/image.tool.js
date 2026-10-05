@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { modeles } from '../../config.js';
-import { ai, messageErreurGemini } from '../../service/gemini.service.js';
+import { ai, messageErreurGemini, optionsAppelDirect } from '../../service/gemini.service.js';
 import { cheminSortie, enregistrerBase64, lireMedia } from '../../service/fichier.service.js';
 import { reponseErreur } from '../reponse.js';
 
@@ -86,7 +86,7 @@ Renvoie : chemins des fichiers, interaction_id, éventuel commentaire du modèle
                 ? { type: 'image', aspect_ratio: params.format, image_size: params.taille }
                 : undefined,
           },
-          { timeout_ms: 5 * 60_000 },
+          optionsAppelDirect(5 * 60_000),
         );
 
         const images = extraireImagesDuDernierTour(interaction);
